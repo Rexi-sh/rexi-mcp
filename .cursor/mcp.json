@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+      "rexi": {
+        "command": "python",
+        "args": ["mcp/server.py"],
+        "env": {
+          "REXI_API_KEY": "pk_wPlOHRd8fo4Eohw3VyuCbsAIlvPOsaek3Es7mgQq"
+        }
+      }
+    }
+  }
