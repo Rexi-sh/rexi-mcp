@@ -3,7 +3,7 @@ import re
 import json
 import glob
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import sys
 import site
@@ -166,8 +166,17 @@ mcp = FastMCP(
 @mcp.tool()
 async def list_endpoints(
     tag: Optional[str] = None,
-    ctx: Context[ServerSession, AppState] = None,
+    ctx: Context[ServerSession, AppState] = ...,
 ) -> List[Dict[str, Any]]:
+    """List all available API endpoints, optionally filtered by tag.
+    
+    Args:
+        tag: Optional tag to filter endpoints by
+        ctx: FastMCP context (injected automatically)
+    
+    Returns:
+        List of endpoint dictionaries with method, path, summary, etc.
+    """
     endpoints = ctx.request_context.lifespan_context.endpoints
     if tag:
         return [e for e in endpoints if tag in (e.get("tags") or [])]
@@ -183,8 +192,23 @@ async def call_rexi(
     body: Optional[Any] = None,
     extra_headers: Optional[Dict[str, str]] = None,
     timeout_seconds: float = 30.0,
-    ctx: Context[ServerSession, AppState] = None,
+    ctx: Context[ServerSession, AppState] = ...,
 ) -> Dict[str, Any]:
+    """Call any Rexi API endpoint.
+    
+    Args:
+        method: HTTP method (GET, POST, PUT, PATCH, DELETE, etc.)
+        path: API path (e.g., '/v1/contracts/{contract_address}')
+        path_params: Dictionary of path parameters to substitute in {placeholders}
+        query: Query parameters as key-value pairs
+        body: Request body (will be sent as JSON)
+        extra_headers: Additional headers to include in the request
+        timeout_seconds: Request timeout in seconds
+        ctx: FastMCP context (injected automatically)
+    
+    Returns:
+        Dictionary with status, headers, url, and data from the response
+    """
     await ctx.info(f"Calling {method.upper()} {path}")
     state = ctx.request_context.lifespan_context
     base_url = state.base_url
@@ -217,7 +241,8 @@ async def call_rexi(
 
 
 @mcp.resource("rexi://openapi")
-def get_openapi_spec(ctx: Context[ServerSession, AppState]) -> str:
+def get_openapi_spec(ctx: Context[ServerSession, AppState] = ...) -> str:
+    """Get the raw OpenAPI specification YAML."""
     if not os.path.exists(OPENAPI_PATH):
         return "OpenAPI spec not found."
     with open(OPENAPI_PATH, "r", encoding="utf-8") as f:
@@ -225,13 +250,23 @@ def get_openapi_spec(ctx: Context[ServerSession, AppState]) -> str:
 
 
 @mcp.resource("rexi://routes")
-def get_routes_index(ctx: Context[ServerSession, AppState]) -> str:
+def get_routes_index(ctx: Context[ServerSession, AppState] = ...) -> str:
+    """Get a JSON summary of all available API routes."""
     endpoints = ctx.request_context.lifespan_context.endpoints
     return json.dumps(endpoints, indent=2)
 
 
 @mcp.resource("rexi-schemas://{name}")
-def get_schema_file(name: str, ctx: Context[ServerSession, AppState]) -> str:
+def get_schema_file(name: str, ctx: Context[ServerSession, AppState] = ...) -> str:
+    """Get a specific JSON schema file by name.
+    
+    Args:
+        name: Name of the schema file (e.g., 'contract.json')
+        ctx: FastMCP context (injected automatically)
+    
+    Returns:
+        Contents of the schema file or error message
+    """
     safe_name = os.path.basename(name)
     path = os.path.join(SCHEMA_DIR, safe_name)
     if not os.path.isfile(path):
@@ -241,7 +276,8 @@ def get_schema_file(name: str, ctx: Context[ServerSession, AppState]) -> str:
 
 
 @mcp.resource("rexi://schemas")
-def list_schema_files(ctx: Context[ServerSession, AppState]) -> str:
+def list_schema_files(ctx: Context[ServerSession, AppState] = ...) -> str:
+    """List all available schema files."""
     files = ctx.request_context.lifespan_context.schemas_index
     return json.dumps(files, indent=2)
 

@@ -1,0 +1,5 @@
+# MCP Server Dependencies
+mcp[cli]
+httpx
+PyYAML
+python-dotenv

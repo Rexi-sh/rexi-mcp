@@ -1,23 +1,44 @@
 # Rexi MCP Server
 
-This folder contains an MCP server that wraps the Rexi API and exposes:
+An MCP (Model Context Protocol) server that wraps the Rexi API and exposes tools and resources for AI assistants.
 
-- **Tools**:
-  - `list_endpoints(tag: Optional[str])` – lists endpoints discovered from `docs/openapi.generated.yaml`.
-  - `call_rexi(method, path, path_params?, query?, body?, extra_headers?, timeout_seconds?)` – generic caller for any endpoint in the OpenAPI.
-- **Resources**:
-  - `rexi://openapi` – raw OpenAPI YAML.
-  - `rexi://routes` – JSON summary of methods, paths, summaries, tags.
-  - `rexi://schemas` – JSON array of available schema filenames.
-  - `rexi-schemas://{name}` – returns the contents of a schema file by name (from `schema/`).
+## Features
+
+### Tools
+- **`list_endpoints(tag: Optional[str])`** – Lists all API endpoints discovered from `docs/openapi.generated.yaml`, optionally filtered by tag.
+- **`call_rexi(...)`** – Generic caller for any Rexi API endpoint with full parameter support:
+  - `method`: HTTP method (GET, POST, PUT, PATCH, DELETE, etc.)
+  - `path`: API path (e.g., `/v1/contracts/{contract_address}`)
+  - `path_params`: Dictionary to substitute `{placeholders}` in the path
+  - `query`: Query parameters as key-value pairs
+  - `body`: Request body (sent as JSON)
+  - `extra_headers`: Additional HTTP headers
+  - `timeout_seconds`: Request timeout (default: 30s)
+
+### Resources
+- **`rexi://openapi`** – Raw OpenAPI YAML specification
+- **`rexi://routes`** – JSON summary of all methods, paths, summaries, and tags
+- **`rexi://schemas`** – JSON array of available schema filenames
+- **`rexi-schemas://{name}`** – Contents of a specific schema file from `schema/` directory
 
 ## Requirements
 
-- Python 3.10+
-- Dependencies in project `requirements.txt` (including `mcp[cli]`, `httpx`, `PyYAML`, `python-dotenv`).
-- Rexi API key (optional but recommended) via env var `REXI_API_KEY`.
+- **Python 3.10+**
+- **Dependencies**: Install via `pip install -r requirements.txt`
+  - `mcp[cli]` – MCP SDK with CLI tools
+  - `httpx` – Async HTTP client
+  - `PyYAML` – YAML parser for OpenAPI spec
+  - `python-dotenv` – Environment variable management
+- **Rexi API Key** (optional but recommended): Set via `REXI_API_KEY` environment variable
 
-You can place environment variables in a `.env` file at the repo root; they will be loaded automatically.
+### Environment Setup
+
+Create a `.env` file in the project root (see `.env.example`):
+```bash
+REXI_API_KEY=your_api_key_here
+```
+
+Environment variables are loaded automatically when the server starts.
 
 ## Running with the MCP CLI (Inspector)
 
@@ -48,8 +69,27 @@ The server determines the base URL from the OpenAPI spec `servers[0].url`. If no
 - OpenAPI file path: `docs/openapi.generated.yaml`.
 - Schema directory: `schema/`.
 
+
 ## Notes
 
 - When calling `call_rexi`, supply any required `path_params` to fill placeholders like `{contract_address}` in the `path` you pass.
 - `query` and `body` are sent as query parameters and JSON body respectively.
 - The server validates nothing beyond basic substitution; refer to the schemas under `schema/` for expected shapes.
+- All context parameters (`ctx`) are automatically injected by FastMCP - you don't need to pass them manually.
+
+## Troubleshooting
+
+### Import Errors
+If you get import errors for `mcp`, ensure you've installed the dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### API Key Issues
+If API calls fail with authentication errors, verify your `REXI_API_KEY` is set correctly in your `.env` file or environment.
+
+### Missing OpenAPI/Schema Files
+The server gracefully handles missing `docs/openapi.generated.yaml` and `schema/` directory. If these files are missing:
+- `list_endpoints()` will return an empty list
+- Resources will return appropriate error messages
+- The server will still start and run
